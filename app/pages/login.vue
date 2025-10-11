@@ -12,6 +12,10 @@ useSeoMeta({
 })
 
 const toast = useToast()
+const router = useRouter()
+const { signIn, signInWithGoogle } = useAuth()
+
+const loading = ref(false)
 
 const fields = [{
   name: 'email',
@@ -33,14 +37,16 @@ const fields = [{
 const providers = [{
   label: 'Google',
   icon: 'i-simple-icons-google',
-  onClick: () => {
-    toast.add({ title: 'Google', description: 'Login with Google' })
-  }
-}, {
-  label: 'GitHub',
-  icon: 'i-simple-icons-github',
-  onClick: () => {
-    toast.add({ title: 'GitHub', description: 'Login with GitHub' })
+  onClick: async () => {
+    try {
+      await signInWithGoogle()
+    } catch (error: any) {
+      toast.add({
+        title: 'Error',
+        description: error.message || 'Failed to sign in with Google',
+        color: 'red'
+      })
+    }
   }
 }]
 
@@ -51,8 +57,28 @@ const schema = z.object({
 
 type Schema = z.output<typeof schema>
 
-function onSubmit(payload: FormSubmitEvent<Schema>) {
-  console.log('Submitted', payload)
+async function onSubmit(payload: FormSubmitEvent<Schema>) {
+  loading.value = true
+  try {
+    await signIn(payload.data.email, payload.data.password)
+
+    toast.add({
+      title: 'Success',
+      description: 'Logged in successfully',
+      color: 'green'
+    })
+
+    // Redirect to home or dashboard
+    await router.push('/')
+  } catch (error: any) {
+    toast.add({
+      title: 'Error',
+      description: error.message || 'Invalid email or password',
+      color: 'red'
+    })
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 

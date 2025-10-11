@@ -12,6 +12,10 @@ useSeoMeta({
 })
 
 const toast = useToast()
+const router = useRouter()
+const { signUp, signInWithGoogle } = useAuth()
+
+const loading = ref(false)
 
 const fields = [{
   name: 'name',
@@ -33,14 +37,16 @@ const fields = [{
 const providers = [{
   label: 'Google',
   icon: 'i-simple-icons-google',
-  onClick: () => {
-    toast.add({ title: 'Google', description: 'Login with Google' })
-  }
-}, {
-  label: 'GitHub',
-  icon: 'i-simple-icons-github',
-  onClick: () => {
-    toast.add({ title: 'GitHub', description: 'Login with GitHub' })
+  onClick: async () => {
+    try {
+      await signInWithGoogle()
+    } catch (error: any) {
+      toast.add({
+        title: 'Error',
+        description: error.message || 'Failed to sign in with Google',
+        color: 'red'
+      })
+    }
   }
 }]
 
@@ -52,8 +58,28 @@ const schema = z.object({
 
 type Schema = z.output<typeof schema>
 
-function onSubmit(payload: FormSubmitEvent<Schema>) {
-  console.log('Submitted', payload)
+async function onSubmit(payload: FormSubmitEvent<Schema>) {
+  loading.value = true
+  try {
+    await signUp(payload.data.email, payload.data.password, payload.data.name)
+
+    toast.add({
+      title: 'Success',
+      description: 'Account created! Please check your email to confirm.',
+      color: 'green'
+    })
+
+    // Redirect to login
+    await router.push('/login')
+  } catch (error: any) {
+    toast.add({
+      title: 'Error',
+      description: error.message || 'Failed to create account',
+      color: 'red'
+    })
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
