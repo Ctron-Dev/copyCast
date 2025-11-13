@@ -28,18 +28,21 @@ export interface Database {
         Row: {
           id: string
           name: string
+          user_id: string
           created_at: string
           expires_at?: string
         }
         Insert: {
           id?: string
           name: string
+          user_id: string
           created_at?: string
           expires_at?: string
         }
         Update: {
           id?: string
           name?: string
+          user_id?: string
           created_at?: string
           expires_at?: string
         }

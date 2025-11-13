@@ -1,8 +1,8 @@
 import { io, Socket } from 'socket.io-client'
 
 interface UseSocketReturn {
-  socket: Ref<Socket | null>
-  isConnected: Ref<boolean>
+  socket: Readonly<Ref<Socket | null>>
+  isConnected: Readonly<Ref<boolean>>
   connect: () => void
   disconnect: () => void
   emit: (event: string, data?: any) => void
@@ -15,61 +15,90 @@ interface UseSocketReturn {
   requestQR: (roomId: string) => void
 }
 
-export const useSocket = (): UseSocketReturn => {
-  const socket = ref<Socket | null>(null)
-  const isConnected = ref(false)
+// Singleton socket instance using useState
+const socketInstance = ref<Socket | null>(null)
+const isConnected = ref(false)
 
+export const useSocket = (): UseSocketReturn => {
   const config = useRuntimeConfig()
-  // Use env variable for socket URL
   const socketUrl = config.public.socketUrl
 
   const connect = () => {
-    if (socket.value?.connected) return
+    // If already connected, do nothing
+    if (socketInstance.value?.connected) {
+      console.log('Socket already connected')
+      return
+    }
 
-    socket.value = io(socketUrl, {
+    // If socket exists but disconnected, try to reconnect
+    if (socketInstance.value && !socketInstance.value.connected) {
+      console.log('Reconnecting existing socket...')
+      socketInstance.value.connect()
+      return
+    }
+
+    // Create new socket instance
+    console.log('Creating new socket connection...')
+    socketInstance.value = io(socketUrl, {
       transports: ['websocket', 'polling'],
       timeout: 20000,
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5
     })
 
-    socket.value.on('connect', () => {
+    // Set up event listeners only once
+    socketInstance.value.on('connect', () => {
       isConnected.value = true
-      console.log('Socket connected')
+      console.log('✅ Socket connected:', socketInstance.value?.id)
     })
 
-    socket.value.on('disconnect', () => {
+    socketInstance.value.on('disconnect', (reason) => {
       isConnected.value = false
-      console.log('Socket disconnected')
+      console.log('❌ Socket disconnected:', reason)
     })
 
-    socket.value.on('connect_error', (error) => {
-      console.error('Socket connection error:', error)
+    socketInstance.value.on('connect_error', (error) => {
+      console.error('🔴 Socket connection error:', error.message)
       isConnected.value = false
+    })
+
+    socketInstance.value.on('reconnect_attempt', (attempt) => {
+      console.log(`🔄 Reconnection attempt ${attempt}...`)
+    })
+
+    socketInstance.value.on('reconnect', (attempt) => {
+      console.log(`✅ Reconnected after ${attempt} attempts`)
     })
   }
 
   const disconnect = () => {
-    if (socket.value) {
-      socket.value.disconnect()
-      socket.value = null
+    if (socketInstance.value) {
+      console.log('Disconnecting socket...')
+      socketInstance.value.disconnect()
+      socketInstance.value = null
       isConnected.value = false
     }
   }
 
   const emit = (event: string, data?: any) => {
-    if (socket.value?.connected) {
-      socket.value.emit(event, data)
+    if (socketInstance.value?.connected) {
+      socketInstance.value.emit(event, data)
+    } else {
+      console.warn(`Cannot emit "${event}": socket not connected`)
     }
   }
 
   const on = (event: string, callback: (...args: any[]) => void) => {
-    if (socket.value) {
-      socket.value.on(event, callback)
+    if (socketInstance.value) {
+      socketInstance.value.on(event, callback)
     }
   }
 
   const off = (event: string, callback?: (...args: any[]) => void) => {
-    if (socket.value) {
-      socket.value.off(event, callback)
+    if (socketInstance.value) {
+      socketInstance.value.off(event, callback)
     }
   }
 
@@ -94,13 +123,8 @@ export const useSocket = (): UseSocketReturn => {
     emit('request-qr', { roomId })
   }
 
-  // Auto cleanup on unmount
-  onUnmounted(() => {
-    disconnect()
-  })
-
   return {
-    socket: readonly(socket),
+    socket: readonly(socketInstance),
     isConnected: readonly(isConnected),
     connect,
     disconnect,

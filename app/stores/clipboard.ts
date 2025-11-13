@@ -5,7 +5,8 @@ type Room = Database['public']['Tables']['rooms']['Row']
 
 export const useClipboardStore = defineStore('clipboard', () => {
   const supabase = useSupabaseClient<Database>()
-  
+  const user = useSupabaseUser()
+
   // State
   const clips = ref<Clip[]>([])
   const currentRoom = ref<Room | null>(null)
@@ -14,18 +15,25 @@ export const useClipboardStore = defineStore('clipboard', () => {
 
   // Actions
   const createRoom = async (name: string) => {
+    if (!user.value) {
+      throw new Error('You must be logged in to create a room')
+    }
+
     try {
       loading.value = true
       error.value = null
-      
+
       const { data, error: supabaseError } = await supabase
         .from('rooms')
-        .insert({ name })
+        .insert({
+          name,
+          user_id: user.value.id
+        })
         .select()
         .single()
 
       if (supabaseError) throw supabaseError
-      
+
       currentRoom.value = data
       return data
     } catch (err) {
@@ -40,7 +48,7 @@ export const useClipboardStore = defineStore('clipboard', () => {
     try {
       loading.value = true
       error.value = null
-      
+
       const { data, error: supabaseError } = await supabase
         .from('rooms')
         .select()
@@ -48,7 +56,7 @@ export const useClipboardStore = defineStore('clipboard', () => {
         .single()
 
       if (supabaseError) throw supabaseError
-      
+
       currentRoom.value = data
       await fetchClips(roomId)
       return data
@@ -62,11 +70,11 @@ export const useClipboardStore = defineStore('clipboard', () => {
 
   const addClip = async (content: string) => {
     if (!currentRoom.value) throw new Error('No room selected')
-    
+
     try {
       loading.value = true
       error.value = null
-      
+
       const { data, error: supabaseError } = await supabase
         .from('clips')
         .insert({
@@ -77,7 +85,7 @@ export const useClipboardStore = defineStore('clipboard', () => {
         .single()
 
       if (supabaseError) throw supabaseError
-      
+
       clips.value.unshift(data)
       return data
     } catch (err) {
@@ -91,11 +99,11 @@ export const useClipboardStore = defineStore('clipboard', () => {
   const fetchClips = async (roomId?: string) => {
     const targetRoomId = roomId || currentRoom.value?.id
     if (!targetRoomId) throw new Error('No room ID provided')
-    
+
     try {
       loading.value = true
       error.value = null
-      
+
       const { data, error: supabaseError } = await supabase
         .from('clips')
         .select()
@@ -103,7 +111,7 @@ export const useClipboardStore = defineStore('clipboard', () => {
         .order('created_at', { ascending: false })
 
       if (supabaseError) throw supabaseError
-      
+
       clips.value = data || []
       return data
     } catch (err) {
@@ -118,14 +126,14 @@ export const useClipboardStore = defineStore('clipboard', () => {
     try {
       loading.value = true
       error.value = null
-      
+
       const { error: supabaseError } = await supabase
         .from('clips')
         .delete()
         .eq('id', clipId)
 
       if (supabaseError) throw supabaseError
-      
+
       clips.value = clips.value.filter(clip => clip.id !== clipId)
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to delete clip'
@@ -147,7 +155,7 @@ export const useClipboardStore = defineStore('clipboard', () => {
     currentRoom: readonly(currentRoom),
     loading: readonly(loading),
     error: readonly(error),
-    
+
     // Actions
     createRoom,
     joinRoom,
