@@ -11,7 +11,7 @@ hero:
       icon: i-lucide-computer
       trailing: false
       size: sm
-      variant: transparent 
+      variant: transparent
     - label: Mobile
       icon: i-lucide-tablet-smartphone
       trailing: false

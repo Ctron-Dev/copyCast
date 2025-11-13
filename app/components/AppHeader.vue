@@ -1,6 +1,25 @@
 <script setup lang="ts">
 const route = useRoute()
 import logo from '~/assets/images/logo.png'
+
+const items = computed(() => [{
+  label: 'Docs',
+  to: '/docs',
+  active: route.path.startsWith('/docs')
+}, {
+  label: 'Pricing',
+  to: '/pricing'
+}, {
+  label: 'Blog',
+  to: '/blog'
+}, {
+  label: 'Changelog',
+  to: '/changelog',
+  badge: {
+    label: 'New',
+    color: 'primary' as const
+  }
+}])
 </script>
 
 <template>
@@ -14,6 +33,11 @@ import logo from '~/assets/images/logo.png'
         <UBadge icon="i-lucide-monitor" size="md" color="warning" variant="solid">No Devices</UBadge>
       </NuxtLink>
     </template>
+
+    <UNavigationMenu
+      :items="items"
+      variant="link"
+    />
 
     <template #right>
       <UColorModeButton />

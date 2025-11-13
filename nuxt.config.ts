@@ -6,7 +6,9 @@ export default defineNuxtConfig({
     '@nuxt/ui-pro',
     '@nuxt/content',
     '@vueuse/nuxt',
-    'nuxt-og-image'
+    'nuxt-og-image',
+    '@nuxtjs/supabase',
+    '@pinia/nuxt'
   ],
 
   devtools: {
@@ -38,5 +40,30 @@ export default defineNuxtConfig({
       }
     }
   },
+
+  content: {
+    preview: {
+      // force module initialization on dev env
+      dev: false
+    },
+    // Disable content websocket
+    websocket: false
+  },
+
+  runtimeConfig: {
+    public: {
+      socketUrl: process.env.SOCKET_URL || 'http://localhost:3001'
+    }
+  },
+
+  supabase: {
+    url: process.env.SUPABASE_URL,
+    key: process.env.SUPABASE_ANON_KEY,
+    redirectOptions: {
+      login: '/login',
+      callback: '/confirm',
+      exclude: ['/']
+    }
+  }
 
 })

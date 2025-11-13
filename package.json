@@ -9,7 +9,9 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "lint": "eslint .",
-    "typecheck": "nuxt typecheck"
+    "typecheck": "nuxt typecheck",
+    "socket": "node socket-server.js",
+    "dev:full": "concurrently \"npm run dev\" \"npm run socket\""
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.57",
@@ -17,15 +19,22 @@
     "@nuxt/content": "^3.6.3",
     "@nuxt/image": "^1.10.0",
     "@nuxt/ui-pro": "^3.2.0",
+    "@nuxtjs/supabase": "^1.6.1",
+    "@pinia/nuxt": "^0.11.2",
     "@standard-schema/spec": "^1.0.0",
+    "@supabase/supabase-js": "^2.56.0",
     "@vueuse/nuxt": "^13.5.0",
     "better-sqlite3": "^12.2.0",
     "nuxt": "^4.0.0",
     "nuxt-og-image": "^5.1.9",
+    "pinia": "^3.0.3",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.5.2",
+    "concurrently": "^9.2.1",
     "eslint": "^9.31.0",
     "typescript": "^5.8.3",
     "vue-tsc": "^3.0.1"
